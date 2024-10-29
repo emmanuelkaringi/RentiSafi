@@ -1,0 +1,82 @@
+name: Development Pipeline
+
+on:
+    push:
+        branches: [ develop ]
+    pull_request:
+        branches: [ develop ]
+
+jobs:
+    test:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v2
+
+            - name: Set up Go
+              uses: actions/seetup-go@v2
+              with:
+                go-version: '1.18'
+
+            - name: Test Backend
+              run: |
+                cd backend
+                go test ./...
+
+            - name: Set up Node.js
+              uses: actions/setup-nodev2
+              with:
+                node-version: '20'
+
+            - name: Test Frontend
+              run: |
+                cd frontend
+                npm install
+                npm test
+    build:
+        needs: test
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v2
+
+            - name: Configure AWS credentials
+              uses: aws-actions/configure-aws-credentials@v1
+              with:
+                aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+                aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+                aws-region: us-east-1
+
+            - name: Login to Amazon ECR
+              id: login-ecr
+              uses: aws-actions/amazon-ecr-login@v1
+
+            - name: Build and push Docker images
+              run: |
+                docker build -t ${{ steps.login-ecr.outputs.registry }}/rentisafi-backend:${{ github.sha }} ./backend
+                docker build -t ${{ steps.login-ecr.outputs.registry }}/rentisafi-frontend:${{ github.sha }} ./frontend
+                docker push ${{ steps.login-ecr.outputs.registry }}/rentisafi-backend:${{ github.sha }}
+                docker push ${{ steps.login-ecr.outputs.registry }}/rentisafi-frontend:${{ github.sha }}
+
+    deploy:
+        needs: build
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v2
+
+            - name: Setup Terraform
+              uses: hashicorp/setup-terraform@v1
+
+            - name: Terraform Init
+              run: |
+                cd terraform/environments/dev
+                terraform plan
+
+            - name: Terraform plan
+              run: |
+                cd terraform/environments/dev
+                terraform plan
+
+            - name: Terraform Apply
+              if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
+              run: |
+                cd terraform/environments/dev
+                terraform apply -auto-approve

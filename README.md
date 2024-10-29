@@ -1,1 +1,2 @@
 # RentiSafi
+RentiSafi is a streamlined property management solution designed for landlords and renters alike. Landlords can efficiently manage properties, track rent payments, and communicate with tenants, while renters can enjoy a hassle-free experience when paying rent, tracking payment history, and handling property-related requests. With a user-friendly interface and built-in tools for property management, RentiSafi simplifies every aspect of the rental experience.

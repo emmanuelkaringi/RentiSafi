@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: ./frontend
+      target: developmennt
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=developmennt
+      - REACT_APP_API_URL=http://localhost:8080
+  
+  backend:
+    build:
+      context: ./backend
+      target: developmennt
+    volumes:
+      - ./backend:/app
+    ports:
+      - "8080:8080"
+    environment:
+      - GO_ENV=developmennt
+      - DB_HOST=postgres
+      - DB_USER=rentisafi
+      - DB_PASSWORD=developmennt
+      - DB_NAME=rentisafi_dev
+    depends_on:
+      - postgres
+
+  postgres:
+    image: postgres:13
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=rentisafi
+      - POSTGRES_PASSWORD=developmennt
+      - POSTGRES_DB=rentisafi_dev
+    volumes:
+      -postgres_data:/var/lib/postgresql/postgres_data
+volumes:
+  postgres_data:
